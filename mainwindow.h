@@ -52,6 +52,12 @@ private slots:
     void on_img_right_clicked();
 
 
+    /*
+     *  update available serial ports combo box on each click
+     */
+    void search_serial_ports();
+
+
 private:
 
     Ui::MainWindow        *ui;

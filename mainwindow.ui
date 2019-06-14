@@ -398,17 +398,55 @@ font: 18pt &quot;Cantarell&quot;;</string>
    <widget class="QLabel" name="photo_num">
     <property name="geometry">
      <rect>
-      <x>890</x>
+      <x>880</x>
       <y>490</y>
-      <width>51</width>
+      <width>71</width>
       <height>20</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Cantarell</family>
+      <pointsize>14</pointsize>
+      <weight>50</weight>
+      <italic>false</italic>
+      <bold>false</bold>
+     </font>
     </property>
     <property name="styleSheet">
      <string notr="true">font: 14pt &quot;Cantarell&quot;;</string>
     </property>
     <property name="text">
      <string>2 of 3</string>
+    </property>
+    <property name="textFormat">
+     <enum>Qt::PlainText</enum>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="ports">
+    <property name="geometry">
+     <rect>
+      <x>1190</x>
+      <y>150</y>
+      <width>161</width>
+      <height>28</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="port_label">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>150</y>
+      <width>32</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Port</string>
     </property>
    </widget>
   </widget>

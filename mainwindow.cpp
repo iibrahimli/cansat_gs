@@ -11,7 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
     srand(123);
 
     // satellite handler
-    sh = new sat_handler();
+    search_serial_ports();
+    sh = new sat_handler(ui->ports->currentText());
 
     // sat_handler signals/slots
     QObject::connect(sh, &sat_handler::push_telemetry, this, &MainWindow::add_telemetry);
@@ -20,19 +21,38 @@ MainWindow::MainWindow(QWidget *parent)
     // ---- plots ----
     init_plots();
 
-
     // ---- image ----
-    QPixmap aepxm("/home/stan/cansat_2019/data/logo.png");
+    QImage logo_img("/home/stan/Desktop/cansat_2019/data/logo.png");
+    logo_img = logo_img.scaled(ui->aerial->width()/2, ui->aerial->height()/2);
+    for(auto x=0; x<logo_img.width(); ++x){
+        for(auto y=0; y<logo_img.height(); ++y){
+            QColor col = logo_img.pixelColor(x, y);
+            col.setHslF(col.hslHueF(),
+                        col.hslSaturationF()/4,
+                        col.lightnessF()*1.2,
+                        col.alphaF()/3);
+            logo_img.setPixelColor(x, y, col);
+        }
+    }
+    QPixmap aepxm;
+    aepxm.convertFromImage(logo_img);
     ui->aerial->setPixmap(aepxm);
+    ui->aerial->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
+    ui->photo_num->clear();
+    ui->photo_num->setText("0 / 0");
 
     // ---- 1 Hz timer ----
     QTimer *timer = new QTimer(this);
     QObject::connect(timer, &QTimer::timeout, this, &MainWindow::update_timer);
     timer->start(1000);
 
-    // button signals/slots
-    QObject::connect(ui->reset, &QPushButton::clicked, this, &MainWindow::reset_timer);
+    // signals/slots
+    connect(ui->reset, &QPushButton::clicked, this, &MainWindow::reset_timer);
+
+    // activate is overloaded blyat
+    connect(ui->ports, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated),
+            this, &MainWindow::search_serial_ports);
 
 }
 
@@ -120,4 +140,12 @@ void MainWindow::on_img_left_clicked()
 void MainWindow::on_img_right_clicked()
 {
 
+}
+
+
+void MainWindow::search_serial_ports()
+{
+    ui->ports->clear();
+    for(auto p : QSerialPortInfo::availablePorts())
+        ui->ports->addItem(p.portName());
 }

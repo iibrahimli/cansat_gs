@@ -48,7 +48,7 @@ signals:
      */
     void push_telemetry(double pres,
                         double alt,
-                        double speed,
+                        double spd,
                         bool   img_taken,
                         gps_cd coord);
 
@@ -76,9 +76,15 @@ private slots:
 private:
 
     /*
-     *  parses telemetry string, returns true if successful
+     *  parses telemetry string into references,
+     *  returns true if successful
      */
-    bool parse_telemetry(QString tlm);
+    bool parse_telemetry(QByteArray  tlm,
+                         double     &pres,
+                         double     &alt,
+                         double     &spd,
+                         bool       &imgt,
+                         gps_cd     &gpsc);
 
 
     int                   img_counter   {0};  // latest image id
