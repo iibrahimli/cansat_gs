@@ -16,7 +16,10 @@ using byte = uint8_t;
 #define PGM_HEADER_SIZE  15
 #define IMG_WIDTH        480
 #define IMG_HEIGHT       480
-#define TLM_END_CHAR     '$'
+#define HEADER_SIZE      2
+#define TLM_START_BYTE   'T'
+#define TLM_END_BYTE     '$'
+#define TEAM_ID          4318
 
 
 /*
@@ -30,7 +33,7 @@ class sat_handler : public QObject{
 public:
 
     explicit sat_handler(QString port_name,
-                         QSerialPort::BaudRate baud = QSerialPort::Baud115200);
+                         qint32 baud = 230400);
 
     ~sat_handler();
 
@@ -41,15 +44,24 @@ public:
     void reset_state();
 
 
+    /*
+     *  settings
+     */
+    void set_port(const QString& port);
+
+    void set_baud(qint32 baud);
+
+
 signals:
 
     /*
      *  adds latest data to plots in MainWindow
      */
-    void push_telemetry(double pres,
+    void push_telemetry(double ftime,
+                        int    packet_id,
                         double alt,
                         double spd,
-                        bool   img_taken,
+                        char   img_taken,
                         gps_cd coord);
 
 
@@ -62,7 +74,7 @@ signals:
 private slots:
 
     /*
-     *  reads data from serial into s_read, copies until TLM_END_CHAR char is found
+     *  reads data from serial port
      */
     void read_data();
 
@@ -80,10 +92,11 @@ private:
      *  returns true if successful
      */
     bool parse_telemetry(QByteArray  tlm,
-                         double     &pres,
+                         double     &ftime,
+                         int        &pckt_id,
                          double     &alt,
                          double     &spd,
-                         bool       &imgt,
+                         char       &imgt,
                          gps_cd     &gpsc);
 
 
@@ -91,10 +104,11 @@ private:
     int                   chunk_counter {0};  // latest chunk id
 
     // indexes are packet IDs
-    std::vector<double>   pressure;
+    std::vector<double>   flight_time;
+    std::vector<int>      packet_id;
     std::vector<double>   altitude;
     std::vector<double>   speed;
-    std::vector<bool>     img_taken;
+    std::vector<char>     img_taken;
     std::vector<gps_cd>   gps;
 
     // holds received (hopefully) pictures

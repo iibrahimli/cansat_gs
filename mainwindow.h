@@ -32,10 +32,11 @@ private slots:
     /*
      *  add telemetry data to the plots
      */
-    void add_telemetry(double pres,
+    void add_telemetry(double ftime,
+                       int    packet_id,
                        double alt,
-                       double speed,
-                       bool   img_taken,
+                       double spd,
+                       char   img_taken,
                        gps_cd coord);
 
 
@@ -58,11 +59,19 @@ private slots:
     void search_serial_ports();
 
 
+    /*
+     *  set satellite handler settings
+     */
+    void set_sat_handler_settings();
+
+
 private:
 
     Ui::MainWindow        *ui;
     sat_handler           *sh;
     std::vector<QPixmap>   imgs;
+    int                    img_index = -1;
+    QString                img_path = QString("/home/stan/Desktop/cansat_2019/data/img/");
 
 };
 

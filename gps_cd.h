@@ -2,6 +2,7 @@
 #define GPS_CD_H
 
 
+#include <QTextStream>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -13,10 +14,11 @@ class gps_cd{
 public:
     gps_cd();
     explicit gps_cd(std::string str);
+    friend QTextStream& operator >> (QTextStream& in, gps_cd coord);  // read from stream
     gps_cd(float lat, char latp, float lon, char lonp);
-    std::string latitude(std::string sep = " ") const;      // ex: "45.6384 N"
-    std::string longitude(std::string sep = " ") const;     // ex: "50.1932 E"
-    explicit operator std::string(void) const;              // cast to string
+    std::string latitude(std::string sep = " ") const;               // ex: "45.6384 N"
+    std::string longitude(std::string sep = " ") const;              // ex: "50.1932 E"
+    explicit operator std::string(void) const;                       // cast to string
 
 private:
     float _latitude;

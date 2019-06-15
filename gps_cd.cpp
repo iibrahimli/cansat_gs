@@ -40,6 +40,29 @@ gps_cd::gps_cd(float lat, char latp, float lon, char lonp)
 {}
 
 
+QTextStream& operator >> (QTextStream& in, gps_cd coord){
+
+    char luluw;
+
+    in >> coord._latitude;
+//    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
+    in >> luluw;
+
+    in >> coord._lat_pos;
+//    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
+    in >> luluw;
+
+    in >> coord._longitude;
+//    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
+    in >> luluw;
+
+    in >> coord._lon_pos;
+//    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
+
+    return in;
+}
+
+
 std::string gps_cd::latitude(std::string sep) const {
     return std::to_string(_latitude) + sep + _lat_pos;
 }
