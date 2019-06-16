@@ -173,51 +173,6 @@
      <string>Reset</string>
     </property>
    </widget>
-   <widget class="QLabel" name="status_label">
-    <property name="geometry">
-     <rect>
-      <x>1150</x>
-      <y>300</y>
-      <width>201</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Satellite status</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="status">
-    <property name="geometry">
-     <rect>
-      <x>1150</x>
-      <y>320</y>
-      <width>201</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>Cantarell</family>
-      <pointsize>16</pointsize>
-      <weight>50</weight>
-      <italic>false</italic>
-      <bold>false</bold>
-     </font>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">color: rgb(115, 210, 22);
-font: 16pt &quot;Cantarell&quot;;</string>
-    </property>
-    <property name="text">
-     <string>DESCENDING</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
    <widget class="QLabel" name="battery_label">
     <property name="geometry">
      <rect>
@@ -288,9 +243,9 @@ font: 16pt &quot;Cantarell&quot;;</string>
    <widget class="QLCDNumber" name="lcdNumber">
     <property name="geometry">
      <rect>
-      <x>1180</x>
+      <x>1150</x>
       <y>250</y>
-      <width>71</width>
+      <width>101</width>
       <height>31</height>
      </rect>
     </property>
@@ -304,7 +259,7 @@ font: 16pt &quot;Cantarell&quot;;</string>
      <bool>false</bool>
     </property>
     <property name="digitCount">
-     <number>3</number>
+     <number>4</number>
     </property>
     <property name="mode">
      <enum>QLCDNumber::Dec</enum>
@@ -471,7 +426,7 @@ font: 16pt &quot;Cantarell&quot;;</string>
      </rect>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="gps_label">
     <property name="geometry">
      <rect>
       <x>360</x>
@@ -482,6 +437,70 @@ font: 16pt &quot;Cantarell&quot;;</string>
     </property>
     <property name="text">
      <string>GPS</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="total_packets_label">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>290</y>
+      <width>101</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Total packets:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lost_packets_label">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>320</y>
+      <width>101</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Lost packets:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="total_pckt">
+    <property name="geometry">
+     <rect>
+      <x>1260</x>
+      <y>290</y>
+      <width>81</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lost_pckt">
+    <property name="geometry">
+     <rect>
+      <x>1260</x>
+      <y>320</y>
+      <width>81</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0 (0%)</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
   </widget>

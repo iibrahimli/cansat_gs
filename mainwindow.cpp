@@ -206,6 +206,16 @@ void MainWindow::add_telemetry(double ftime,
         ui->table->setItem(ui->table->rowCount()-1, c, new QTableWidgetItem(row.at(c)));
     }
     ui->table->scrollToBottom();
+
+    // update stats
+    ui->total_pckt->setText(QString("%1").arg(sh->get_recv_tlm_count() + sh->get_lost_tlm_count()));
+    ui->lost_pckt->setText(QString("%1 (%2%)").arg(
+                               sh->get_lost_tlm_count()).arg(
+                               (sh->get_recv_tlm_count() + sh->get_recv_tlm_count() == 0) ?
+                               0 :
+                               ((double) sh->get_lost_tlm_count() /
+                               (sh->get_lost_tlm_count() + sh->get_recv_tlm_count()))));
+
 }
 
 

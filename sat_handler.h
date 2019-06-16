@@ -65,6 +65,18 @@ public:
     void set_baud(qint32 baud);
 
 
+    /*
+     *  returns number of dropped telemetry packets
+     */
+    int get_lost_tlm_count();
+
+
+    /*
+     *  returns number of telemetry packets in memory
+     */
+    int get_recv_tlm_count();
+
+
 signals:
 
     /*

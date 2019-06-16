@@ -60,6 +60,24 @@ void sat_handler::set_baud(qint32 baud)
 }
 
 
+// return # of dropped packets so far, which is
+// # of transmitted - # of received
+int sat_handler::get_lost_tlm_count()
+{
+    if(packet_id.size() == 0)
+        return 0;
+    else
+        return packet_id[packet_id.size()-1]+1 - packet_id.size();
+}
+
+
+// return # of received telemetry packets
+int sat_handler::get_recv_tlm_count()
+{
+    return packet_id.size();
+}
+
+
 //void sat_handler::read_data()
 //{
 //    static QByteArray line;
@@ -346,4 +364,6 @@ bool sat_handler::parse_image(const QByteArray &pckt)
 
     // send image to MainWindow
     emit push_img(img[img_counter-1]);
+
+    return true;
 }
