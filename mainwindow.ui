@@ -494,19 +494,18 @@ font: 16pt &quot;Cantarell&quot;;</string>
      <height>25</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuActions">
-    <property name="title">
-     <string>Actions</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuData">
     <property name="title">
      <string>Data</string>
     </property>
    </widget>
-   <addaction name="menuActions"/>
    <addaction name="menuData"/>
   </widget>
+  <action name="export_csv">
+   <property name="text">
+    <string>Export as CSV</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>

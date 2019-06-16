@@ -31,7 +31,7 @@ gps_cd::gps_cd(std::string str){
 }
 
 
-gps_cd::gps_cd(float lat, char latp, float lon, char lonp)
+gps_cd::gps_cd(double lat, char latp, double lon, char lonp)
     :
       _latitude(lat),
       _lat_pos(latp),

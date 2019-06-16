@@ -6,6 +6,8 @@
 #include <QPixmap>
 #include <QtMath>
 #include <QtSerialPort/QSerialPort>
+#include <QFile>
+#include <QDateTime>
 #include <iostream>
 #include <vector>
 #include "gps_cd.h"
@@ -13,13 +15,24 @@
 
 using byte = uint8_t;
 
+
 #define PGM_HEADER_SIZE  15
 #define IMG_WIDTH        480
 #define IMG_HEIGHT       480
-#define HEADER_SIZE      2
+
+#define TEAM_ID          4318
+#define HEADER_SIZE      3
 #define TLM_START_BYTE   'T'
 #define TLM_END_BYTE     '$'
-#define TEAM_ID          4318
+#define TLM_MAX_SIZE     56
+
+#define IMG_START_BYTE   'P'
+
+
+// path to saved images
+const QString img_path = QString("/home/stan/Desktop/cansat_2019/data/img/");
+const QString tlm_path = QString("/home/stan/Desktop/cansat_2019/data/tlm/");
+const QString tmp_path = QString("/home/stan/Desktop/cansat_2019/data/tmp/");
 
 
 /*
@@ -89,15 +102,24 @@ private:
 
     /*
      *  parses telemetry string into references,
+     *  appends the line to csv file
      *  returns true if successful
      */
-    bool parse_telemetry(QByteArray  tlm,
-                         double     &ftime,
-                         int        &pckt_id,
-                         double     &alt,
-                         double     &spd,
-                         char       &imgt,
-                         gps_cd     &gpsc);
+    bool parse_telemetry(const QByteArray&  tlm,
+                         double            &ftime,
+                         int               &pckt_id,
+                         double            &alt,
+                         double            &spd,
+                         char              &imgt,
+                         gps_cd            &gpsc);
+
+
+    /*
+     *  parses an image packet and saves it to the
+     *  specified path on disk as <img_counter>.pgm
+     *  and increments img_counter
+     */
+    bool parse_image(const QByteArray& pckt);
 
 
     int                   img_counter   {0};  // latest image id
@@ -115,11 +137,10 @@ private:
     // in file system, photos are named 0.pgm, 1.pgm, 2.pgm etc
     std::vector<QPixmap>  img;
 
-    // image (PGM) file buffer, will be written to a file
-    byte                 *img_file_buf{nullptr};
-
     QSerialPort           serial;
     QByteArray            s_read;   // raw data read from serial port
+
+    QString               tlm_log_filename; // (datetime.csv) latest file being written
 
 };
 

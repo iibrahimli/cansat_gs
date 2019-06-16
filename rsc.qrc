@@ -12,5 +12,6 @@
         <file>sat_handler.cpp</file>
         <file>sat_handler.h</file>
         <file>rsc/default_baud.png</file>
+        <file>rsc/export.png</file>
     </qresource>
 </RCC>

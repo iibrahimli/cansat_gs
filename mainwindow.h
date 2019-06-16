@@ -60,9 +60,10 @@ private slots:
 
 
     /*
-     *  set satellite handler settings
+     *  saves telemetry data to a CSV file
+     *  prompts user to select path and filename
      */
-    void set_sat_handler_settings();
+    void export_csv();
 
 
 private:
@@ -71,7 +72,6 @@ private:
     sat_handler           *sh;
     std::vector<QPixmap>   imgs;
     int                    img_index = -1;
-    QString                img_path = QString("/home/stan/Desktop/cansat_2019/data/img/");
 
 };
 

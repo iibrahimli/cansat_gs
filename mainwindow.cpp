@@ -35,6 +35,11 @@ MainWindow::MainWindow(QWidget *parent)
                                          << "1000000");
     ui->baudrate->setCurrentText("230400");
 
+    // menu & exporting
+    QAction *export_to_csv = new QAction(QIcon(":/rsc/export.png"), "&Export to CSV");
+    ui->menuData->addAction(export_to_csv);
+    connect(export_to_csv, &QAction::triggered, this, &MainWindow::export_csv);
+
 
     // image
     QImage logo_img(":/rsc/logo.png");
@@ -57,11 +62,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->photo_num->clear();
     ui->photo_num->setText("0 / 0");
 
-    // ================================
-    // == * * * * * * * * * * * * *  ==
-    // == TODO: fucking GPS bitmap ? ==
-    // == * * * * * * * * * * * * *  ==
-    // ================================
+
+    // ===============================
+    // == * * * * * * * * * * * * * ==
+    // == TODO: fucking GPS map ??? ==
+    // == * * * * * * * * * * * * * ==
+    // ===============================
+
 
     // 1 Hz timer
     QTimer *timer = new QTimer(this);
@@ -126,6 +133,9 @@ MainWindow::~MainWindow(){
 }
 
 
+/*
+ *  initialize plots
+ */
 void MainWindow::init_plots()
 {
     ui->altitude->addGraph();
@@ -133,6 +143,9 @@ void MainWindow::init_plots()
 }
 
 
+/*
+ *  reset plots
+ */
 void MainWindow::reset_plots()
 {
     ui->altitude->graph(0)->data()->clear();
@@ -143,18 +156,27 @@ void MainWindow::reset_plots()
 }
 
 
+/*
+ *
+ */
 void MainWindow::update_timer()
 {
     ui->lcdNumber->display(ui->lcdNumber->value()+1);
 }
 
 
+/*
+ *  tick
+ */
 void MainWindow::reset_timer()
 {
     ui->lcdNumber->display(0);
 }
 
 
+/*
+ *  slot to add telemetry to plots and table
+ */
 void MainWindow::add_telemetry(double ftime,
                                int    packet_id,
                                double alt,
@@ -187,6 +209,9 @@ void MainWindow::add_telemetry(double ftime,
 }
 
 
+/*
+ *  slot to add image to slideshow
+ */
 void MainWindow::add_img(QPixmap img)
 {
     imgs.push_back(img);
@@ -214,6 +239,9 @@ void MainWindow::on_img_right_clicked()
 }
 
 
+/*
+ *  search available ports and add to ports combo box
+ */
 void MainWindow::search_serial_ports()
 {
     ui->ports->clear();
@@ -222,7 +250,23 @@ void MainWindow::search_serial_ports()
 }
 
 
-void MainWindow::set_sat_handler_settings()
+/*
+ *  save telemetry to disk (prompts user)
+ */
+void MainWindow::export_csv()
 {
-
+    // open a modal dialog
+    QString file_name = QFileDialog::getSaveFileName(this,
+                                                     "Export telemetry",
+                                                     tlm_path,
+                                                     "CSV files (*.csv);;");
+    if (file_name.isEmpty())
+        return;
+    else {
+        QFile file(file_name);
+        if (!file.open(QIODevice::WriteOnly)) {
+            QMessageBox::information(this, "Unable to open file", file.errorString());
+            return;
+        }
+    }
 }
