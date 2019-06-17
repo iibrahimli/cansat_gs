@@ -24,7 +24,7 @@ using byte = uint8_t;
 #define HEADER_SIZE      3
 #define TLM_START_BYTE   'T'
 #define TLM_END_BYTE     '$'
-#define TLM_MAX_SIZE     56
+#define TLM_MAX_SIZE     57
 
 #define IMG_START_BYTE   'P'
 
@@ -60,7 +60,7 @@ public:
     /*
      *  settings
      */
-    void set_port(const QString& port);
+    void set_port(QString port);
 
     void set_baud(qint32 baud);
 
@@ -94,6 +94,14 @@ signals:
      *  adds latest image to pixmap array in MainWindow
      */
     void push_img(QPixmap img);
+
+
+public slots:
+
+    /*
+     *  send a packet to the satellite
+     */
+    void send_packet(QByteArray data);
 
 
 private slots:
@@ -149,7 +157,7 @@ private:
     // in file system, photos are named 0.pgm, 1.pgm, 2.pgm etc
     std::vector<QPixmap>  img;
 
-    QSerialPort           serial;
+    QSerialPort          *serial;
     QByteArray            s_read;   // raw data read from serial port
 
     QString               tlm_log_filename; // (datetime.csv) latest file being written

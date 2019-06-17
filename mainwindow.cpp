@@ -1,6 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QDebug>
+
+//ADD AUTOSCROLL AND REMOVE $ FROM CSV AND ADD HEADER TO CSV
+
 
 MainWindow::MainWindow(QWidget *parent)
     :
@@ -32,8 +36,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->baudrate->addItems(QStringList() << "9600"
                                          << "115200"
                                          << "230400"
-                                         << "1000000");
+                                         << "460800");
     ui->baudrate->setCurrentText("230400");
+    ui->autoscroll->setChecked(true);
 
     // menu & exporting
     QAction *export_to_csv = new QAction(QIcon(":/rsc/export.png"), "&Export to CSV");
@@ -64,20 +69,49 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     // ===============================
-    // == * * * * * * * * * * * * * ==
-    // == TODO: fucking GPS map ??? ==
-    // == * * * * * * * * * * * * * ==
+    // ==|*************************|==
+    // ==|* TODO: fucking GPS map *|==
+    // ==|*************************|==
     // ===============================
 
 
     // 1 Hz timer
     QTimer *timer = new QTimer(this);
-    QObject::connect(timer, &QTimer::timeout, this, &MainWindow::update_timer);
-    timer->start(1000);
+    timer->setInterval(1000);
+    connect(timer, &QTimer::timeout, this, &MainWindow::update_timer);
+    connect(ui->init, &QPushButton::clicked, [timer](){
+        timer->start();
+    });
+    connect(ui->init, &QPushButton::clicked, [=](){
+        sh->send_packet(QByteArray("T"));
+    });
+
+
+    // satellite handler
+    search_serial_ports();
+    sh = new sat_handler(ui->ports->currentText());
+
+
+    // sat_handler signals/slots
+    connect(sh, &sat_handler::push_telemetry, this, &MainWindow::add_telemetry);
+    connect(sh, &sat_handler::push_img,       this, &MainWindow::add_img);
+
 
 
     // UI signals/slots
-    connect(ui->reset,   &QPushButton::clicked, this, &MainWindow::reset_timer);
+    connect(ui->reset,   &QPushButton::clicked, [=](){
+        reset_plots();
+        reset_timer();
+        timer->stop();
+        ui->total_pckt->setText(QString("%1").arg(0));
+        ui->lost_pckt->setText(QString("%1 (%2%)").arg("0", "0.0"));
+        sh->reset_state();
+
+        // save data from tables & reset tables
+        // TODO
+        ui->table->clearContents();
+
+    });
     connect(ui->refresh, &QPushButton::clicked, this, &MainWindow::search_serial_ports);
     connect(ui->default_baud, &QPushButton::clicked, [=](){
         ui->baudrate->setCurrentText("230400");
@@ -93,36 +127,31 @@ MainWindow::MainWindow(QWidget *parent)
             [=](){
                 sh->set_baud(ui->baudrate->currentText().toInt());
             });
+    connect(ui->autoscroll, &QCheckBox::toggled, [=](bool checked){
+       autoscroll_table = checked;
+    });
 
 
-    // satellite handler
-    search_serial_ports();
-    sh = new sat_handler(ui->ports->currentText());
-
-
-    // sat_handler signals/slots
-    QObject::connect(sh, &sat_handler::push_telemetry, this, &MainWindow::add_telemetry);
-    QObject::connect(sh, &sat_handler::push_img,       this, &MainWindow::add_img);
 
 
     // ============================================
 
-    emit sh->push_telemetry(12.45, 11, 111.08, 12.60, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(14.45, 13, 114.98, 7.45, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(15.60, 14, 116.65, 5.48, '1', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(16.31, 15, 115.48, 6.99, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(18.40, 16, 117.65, 5.48, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(19.59, 17, 119.00, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(23.02, 20, 127.55, 6.48, '1', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(24.44, 21, 128.12, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(12.45, 11, 111.08, 2.60, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(14.45, 13, 114.98, 7.45, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(15.60, 14, 116.65, 5.48, '1', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(16.31, 15, 115.48, 6.99, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(18.40, 16, 117.65, 5.48, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(19.59, 17, 119.00, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(23.02, 20, 127.55, 6.48, '1', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(24.44, 21, 128.12, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
 
-    emit sh->push_img(QPixmap(img_path + "0.png"));
-    emit sh->push_img(QPixmap(img_path + "1.jpg"));
-    emit sh->push_img(QPixmap(img_path + "1.png"));
-    emit sh->push_img(QPixmap(img_path + "2.png"));
-    emit sh->push_img(QPixmap(img_path + "3.png"));
-    emit sh->push_img(QPixmap(img_path + "4.png"));
-    emit sh->push_img(QPixmap(img_path + "6.png"));
+//    emit sh->push_img(QPixmap(img_path + "0.png"));
+//    emit sh->push_img(QPixmap(img_path + "1.jpg"));
+//    emit sh->push_img(QPixmap(img_path + "1.png"));
+//    emit sh->push_img(QPixmap(img_path + "2.png"));
+//    emit sh->push_img(QPixmap(img_path + "3.png"));
+//    emit sh->push_img(QPixmap(img_path + "4.png"));
+//    emit sh->push_img(QPixmap(img_path + "6.png"));
 
 }
 
@@ -205,16 +234,16 @@ void MainWindow::add_telemetry(double ftime,
     for(auto c = 0; c < ui->table->columnCount(); ++c){
         ui->table->setItem(ui->table->rowCount()-1, c, new QTableWidgetItem(row.at(c)));
     }
-    ui->table->scrollToBottom();
+    if(autoscroll_table) ui->table->scrollToBottom();
 
     // update stats
     ui->total_pckt->setText(QString("%1").arg(sh->get_recv_tlm_count() + sh->get_lost_tlm_count()));
     ui->lost_pckt->setText(QString("%1 (%2%)").arg(
                                sh->get_lost_tlm_count()).arg(
                                (sh->get_recv_tlm_count() + sh->get_recv_tlm_count() == 0) ?
-                               0 :
-                               ((double) sh->get_lost_tlm_count() /
-                               (sh->get_lost_tlm_count() + sh->get_recv_tlm_count()))));
+                               QString("0") :
+                               QString::number((double) sh->get_lost_tlm_count() /
+                               (sh->get_lost_tlm_count() + sh->get_recv_tlm_count()) * 100., 'f', 1) ));
 
 }
 
@@ -255,8 +284,9 @@ void MainWindow::on_img_right_clicked()
 void MainWindow::search_serial_ports()
 {
     ui->ports->clear();
-    for(auto p : QSerialPortInfo::availablePorts())
+    for(auto p : QSerialPortInfo::availablePorts()){
         ui->ports->addItem(p.portName());
+    }
 }
 
 

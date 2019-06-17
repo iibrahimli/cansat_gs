@@ -64,12 +64,18 @@ QTextStream& operator >> (QTextStream& in, gps_cd coord){
 
 
 std::string gps_cd::latitude(std::string sep) const {
-    return std::to_string(_latitude) + sep + _lat_pos;
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(5);
+    out << _latitude;
+    return out.str() + sep + _lat_pos;
 }
 
 
 std::string gps_cd::longitude(std::string sep) const {
-    return std::to_string(_longitude) + sep + _lon_pos;
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(5);
+    out << _longitude;
+    return out.str() + sep + _lon_pos;
 }
 
 

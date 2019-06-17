@@ -1,3 +1,5 @@
+// In the name of God
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -72,6 +74,7 @@ private:
     sat_handler           *sh;
     std::vector<QPixmap>   imgs;
     int                    img_index = -1;
+    bool                   autoscroll_table = true;
 
 };
 
