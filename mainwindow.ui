@@ -215,7 +215,7 @@
      </rect>
     </property>
     <property name="value">
-     <number>78</number>
+     <number>100</number>
     </property>
     <property name="textVisible">
      <bool>true</bool>
@@ -237,7 +237,13 @@
      </rect>
     </property>
     <property name="value">
-     <number>24</number>
+     <number>0</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <property name="invertedAppearance">
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QLCDNumber" name="lcdNumber">
@@ -543,6 +549,35 @@
     </property>
     <property name="text">
      <string>Autoscroll</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="alt_smoothing">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>10</y>
+      <width>90</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Smoothing</string>
+    </property>
+    <property name="tristate">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="spd_smoothing">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>250</y>
+      <width>90</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Smoothing</string>
     </property>
    </widget>
   </widget>

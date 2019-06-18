@@ -83,7 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
         timer->start();
     });
     connect(ui->init, &QPushButton::clicked, [=](){
-        sh->send_packet(QByteArray("T"));
+        sh->send_packet(QByteArray("DATTE"));
     });
 
 
@@ -109,7 +109,8 @@ MainWindow::MainWindow(QWidget *parent)
 
         // save data from tables & reset tables
         // TODO
-        ui->table->clearContents();
+//        ui->table->clearContents();
+        ui->table->setRowCount(0);
 
     });
     connect(ui->refresh, &QPushButton::clicked, this, &MainWindow::search_serial_ports);
@@ -263,6 +264,7 @@ void MainWindow::add_img(QPixmap img)
 // previous image in the array
 void MainWindow::on_img_left_clicked()
 {
+    if(imgs.size() == 0) return;
     img_index = (imgs.size() + (img_index - 1)) % imgs.size();
     ui->aerial->setPixmap(imgs[img_index].scaled(ui->aerial->width(), ui->aerial->height()));
     ui->photo_num->setText(QString("%1 / %2").arg(img_index+1).arg(imgs.size()));
@@ -272,6 +274,7 @@ void MainWindow::on_img_left_clicked()
 // next image in the array
 void MainWindow::on_img_right_clicked()
 {
+    if(imgs.size() == 0) return;
     img_index = (img_index+1) % imgs.size();
     ui->aerial->setPixmap(imgs[img_index].scaled(ui->aerial->width(), ui->aerial->height()));
     ui->photo_num->setText(QString("%1 / %2").arg(img_index+1).arg(imgs.size()));

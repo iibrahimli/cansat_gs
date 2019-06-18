@@ -44,8 +44,9 @@ void sat_handler::reset_state()
     gps.clear();
     img.clear();
 
-    s_read.clear();
+    read_data();
     serial->clear();
+    buf.clear();
 
     tlm_log_filename = QString("%1.csv")
                        .arg(QDateTime::currentDateTime().toString("dd_MM_yyyy_hh_mm_ss"));
@@ -71,10 +72,14 @@ void sat_handler::set_baud(qint32 baud)
 // # of transmitted - # of received
 int sat_handler::get_lost_tlm_count()
 {
+    std::vector<int> pckt_cp;
     if(packet_id.size() == 0)
         return 0;
-    else
-        return packet_id[packet_id.size()-1]+1 - packet_id.size();
+    else{
+        pckt_cp = packet_id;
+        std::sort(pckt_cp.begin(), pckt_cp.end());
+        return pckt_cp[pckt_cp.size()-1]+1 - pckt_cp.size();
+    }
 }
 
 
@@ -99,7 +104,7 @@ void sat_handler::send_packet(QByteArray data)
  */
 void sat_handler::read_data()
 {
-    static QByteArray buf;
+    // member QByteArray buf: buffer
     static QByteArray res;                  // result: packet with header
     static int        idx         = 0;      // index in buffer
     static int        header_start_idx = 0;
@@ -147,6 +152,8 @@ void sat_handler::read_data()
         // read the body
         buf.append(serial->read(size - HEADER_SIZE));
 
+//        qDebug() << QString(buf);
+
         // check packet integrity
         if(buf[header_start_idx + size - 1] != TLM_END_BYTE){
             // corrupted packet
@@ -167,10 +174,17 @@ void sat_handler::read_data()
         idx = 0;
         header_start_idx = 0;
 
-        std::cout << res.toStdString() << std::endl;
+        std::cout << "Received telemetry packet: " << res.toStdString() << std::endl;
 
         if(parse_telemetry(res, ftime, pckt_id, alt, spd, imgt, gpsc)){
             // successfully parsed: telemetry packet complete
+
+            // ignore duplicate packets
+            if(check_index(packet_id, pckt_id)){
+                res.clear();
+                started  = false;
+                return;
+            }
 
             flight_time.emplace_back(ftime);
             packet_id.emplace_back(pckt_id);
@@ -181,9 +195,29 @@ void sat_handler::read_data()
 
             // append to the end of the log file
             QFile log(tmp_path + tlm_log_filename);
+            if(!log.exists()){
+                // write headers
+                if(log.open(QIODevice::ReadWrite | QIODevice::Append)){
+                    log.write("Team ID,"
+                              "Elapsed time,"
+                              "Packet ID,"
+                              "Altitude,"
+                              "Speed,"
+                              "Latitude,"
+                              "Latitude direction,"
+                              "Longitude,"
+                              "Longitude direction,"
+                              "Photo taken\r\n");
+                    log.close();
+                }
+                else{
+                    std::cerr << "Couldn't open file " << log.fileName().toStdString() << std::endl;
+                    return;
+                }
+            }
             if(log.open(QIODevice::ReadWrite | QIODevice::Append)){
                 // write starting from the data itself
-                log.write(res.mid(3) + QByteArray("\n"));
+                log.write(res.mid(3).chopped(1) + QByteArray("\n"));
                 log.close();
             }
             else{
@@ -229,21 +263,21 @@ bool sat_handler::parse_telemetry(const QByteArray&  tlm,
     //    |    |      |   |      |      |        | |        | |
     //  -> 0 | 1  |   2  | 3 |   4  |  5   |    6   |7|   8    |9|10
     //
-    // 0: header = 'T' (1 byte, ASCII) + total packet size (1 byte, binary)
-    // 1: team id (4 bytes, ASCII "4318")
-    // 2: elapsed time (ASCII double .2)
-    // 3: packet id (ASCII int)
-    // 4: altitude (ASCII double .2)
-    // 5: speed (ASCII double .2)
-    // 6: latitude (ASCII double .5)
-    // 7: latitude dir (ASCII char N/S)
-    // 8: longitude (ASCII double .5)
-    // 9: longitude dir (ASCII char E/W)
-    //10: image taken (ASCII char 0/1)
+    // : header = 'T' (1 byte, ASCII) + total packet size (1 byte, binary)
+    // 0: team id (4 bytes, ASCII "4318")
+    // 1: elapsed time (ASCII double .2)
+    // 2: packet id (ASCII int)
+    // 3: altitude (ASCII double .2)
+    // 4: speed (ASCII double .2)
+    // 5: latitude (ASCII double .5)
+    // 6: latitude dir (ASCII char N/S)
+    // 7: longitude (ASCII double .5)
+    // 8: longitude dir (ASCII char E/W)
+    // 9: image taken (ASCII char 0/1)
 
 
     // split into fields
-    QList<QByteArray> spl = tlm.mid(3).split(',');
+    QList<QByteArray> spl = tlm.mid(3, tlm.size()-4).split(',');
 
     // check number of fields
     if(spl.size() != 10)
@@ -263,41 +297,6 @@ bool sat_handler::parse_telemetry(const QByteArray&  tlm,
     imgt    = spl[9][0];
 
     return true;
-
-
-//    QTextStream in(tlm);
-//    char luluw;
-//    int luluw2;
-
-//    // skip T, size, and team ID
-//    in >> luluw;
-//    in >> luluw;
-//    in >> luluw2;
-
-//    in >> ftime;
-////    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
-//    in >> luluw;
-
-//    in >> pckt_id;
-////    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
-//    in >> luluw;
-
-//    in >> alt;
-////    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
-//    in >> luluw;
-
-//    in >> spd;
-////    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
-//    in >> luluw;
-
-//    in >> gpsc;
-////    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
-//    in >> luluw;
-
-//    in >> imgt;
-////    while(in.peek() == ',' || in.peek() == ' ') in.ignore();
-
-//    return true;
 }
 
 
@@ -313,7 +312,7 @@ bool sat_handler::parse_image(const QByteArray &pckt)
     // 0: header: 'P' (1 byte, ASCII) and total packet size (1 byte, binary)
     // 1: image id (1 byte, binary)
     // 2: chunk id (1 byte, binary)
-    // 3: size of data (4) (1 byte, binary) ?????????????????????????????????????????????????? TODO ===
+    // 3: size of data (4) (1 byte, binary) ????????????????????????? TODO ===
 
     // write image to file
     QFile file(img_path + QString("%1.pgm").arg(img_counter));
@@ -333,4 +332,16 @@ bool sat_handler::parse_image(const QByteArray &pckt)
     emit push_img(img[img_counter-1]);
 
     return true;
+}
+
+
+/*
+ *
+ */
+bool sat_handler::check_index(const std::vector<int>& v, const int id)
+{
+    if(v.size() == 0) return false;
+    int s = v.size() - 1;
+    for(; s >= 0; --s) if(Q_LIKELY(v.at(s) == id)) return true;
+    return false;
 }

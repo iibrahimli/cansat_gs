@@ -142,6 +142,14 @@ private:
     bool parse_image(const QByteArray& pckt);
 
 
+
+    /*
+     *  utility function to check whether given index exists in array
+     *  returns true if id exists in v
+     */
+    bool check_index(const std::vector<int>& v, const int id);
+
+
     int                   img_counter   {0};  // latest image id
     int                   chunk_counter {0};  // latest chunk id
 
@@ -158,8 +166,7 @@ private:
     std::vector<QPixmap>  img;
 
     QSerialPort          *serial;
-    QByteArray            s_read;   // raw data read from serial port
-
+    QByteArray            buf;   // raw data read from serial port
     QString               tlm_log_filename; // (datetime.csv) latest file being written
 
 };
