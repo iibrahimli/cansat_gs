@@ -137,7 +137,6 @@ MainWindow::MainWindow(QWidget *parent)
             ui->altitude->graph(0)->setPen(QPen(QBrush(Qt::lightGray), 1));
             ui->altitude->graph(1)->setPen(QPen(QBrush(Qt::blue), 2));
             ui->altitude->graph(1)->setVisible(true);
-            ui->altitude->graph(1)->setData(keys, altitude_smoothed);
         }
         else{
             // no smoothing
@@ -152,7 +151,6 @@ MainWindow::MainWindow(QWidget *parent)
             ui->speed->graph(0)->setPen(QPen(QBrush(Qt::lightGray), 1));
             ui->speed->graph(1)->setPen(QPen(QBrush(Qt::blue), 2));
             ui->speed->graph(1)->setVisible(true);
-            ui->speed->graph(1)->setData(keys, speed_smoothed);
         }
         else{
             // no smoothing
@@ -167,14 +165,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     // ============================================
 
-    emit sh->push_telemetry(12.45, 11, 111.08, 2.60, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(14.45, 13, 114.98, 7.45, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(15.60, 14, 116.65, 5.48, '1', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(16.31, 15, 115.48, 6.99, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(18.40, 16, 117.65, 5.48, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(19.59, 17, 119.00, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(23.02, 20, 127.55, 6.48, '1', gps_cd("54.52267,N,47.12375,E"));
-    emit sh->push_telemetry(24.44, 21, 128.12, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(12.45, 11, 111.08, 2.60, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(14.45, 13, 114.98, 7.45, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(15.60, 14, 116.65, 5.48, '1', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(16.31, 15, 115.48, 6.99, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(18.40, 16, 117.65, 5.48, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(19.59, 17, 119.00, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(23.02, 20, 127.55, 6.48, '1', gps_cd("54.52267,N,47.12375,E"));
+//    emit sh->push_telemetry(24.44, 21, 128.12, 5.99, '0', gps_cd("54.52267,N,47.12375,E"));
 
 //    emit sh->push_img(QPixmap(img_path + "0.png"));
 //    emit sh->push_img(QPixmap(img_path + "1.jpg"));
@@ -201,9 +199,11 @@ void MainWindow::init_plots()
     // 2 graphs because of smoothing
     ui->altitude->addGraph();
     ui->altitude->addGraph();
+    ui->altitude->graph(1)->setVisible(false);
 
     ui->speed->addGraph();
     ui->speed->addGraph();
+    ui->speed->graph(1)->setVisible(false);
 }
 
 
@@ -213,9 +213,11 @@ void MainWindow::init_plots()
 void MainWindow::reset_plots()
 {
     ui->altitude->graph(0)->data()->clear();
+    ui->altitude->graph(1)->data()->clear();
     ui->altitude->replot();
 
     ui->speed->graph(0)->data()->clear();
+    ui->speed->graph(1)->data()->clear();
     ui->speed->replot();
 }
 
@@ -226,6 +228,13 @@ void MainWindow::reset_plots()
 void MainWindow::update_timer()
 {
     ui->lcdNumber->display(ui->lcdNumber->value()+1);
+
+//    emit sh->push_telemetry(ui->lcdNumber->value(),
+//                            ui->lcdNumber->value(),
+//                            ((double) qrand()/RAND_MAX) * ui->lcdNumber->value()*10 + ui->lcdNumber->value()*3.4,
+//                            ((double) qrand()/RAND_MAX) + 3.4,
+//                            '0',
+//                            gps_cd("54.52267,N,47.12375,E"));
 }
 
 
@@ -248,6 +257,22 @@ void MainWindow::add_telemetry(double ftime,
                                char   img_taken,
                                gps_cd coord)
 {
+    // add smoothed versions
+    if(Q_LIKELY(alt_buffer.size() == SMOOTHING_WINDOW_SIZE)) alt_buffer.erase(alt_buffer.cbegin());
+    alt_buffer.push_back(alt);
+//    double smoothed_alt = ;
+//    altitude_smoothed.push_back();
+    ui->altitude->graph(1)->addData(ftime,
+                                    std::accumulate(alt_buffer.begin(), alt_buffer.end(), 0.0) / alt_buffer.size());
+
+    if(Q_LIKELY(spd_buffer.size() == SMOOTHING_WINDOW_SIZE)) spd_buffer.erase(spd_buffer.cbegin());
+    spd_buffer.push_back(spd);
+//    speed_smoothed.push_back(std::accumulate(spd_buffer.begin(), spd_buffer.end(), 0.0) / spd_buffer.size());
+    ui->speed->graph(1)->addData(ftime,
+                                 std::accumulate(spd_buffer.begin(), spd_buffer.end(), 0.0) / spd_buffer.size());
+
+
+    // update graphs
     ui->altitude->graph(0)->addData(ftime, alt);
     ui->altitude->rescaleAxes();
     ui->altitude->replot();
@@ -256,16 +281,6 @@ void MainWindow::add_telemetry(double ftime,
     ui->speed->rescaleAxes();
     ui->speed->replot();
 
-    keys.push_back(ftime);
-
-    // add smoothed versions
-    if(Q_LIKELY(alt_buffer.size() == SMOOTHING_WINDOW_SIZE)) alt_buffer.erase(alt_buffer.cbegin());
-    alt_buffer.push_back(alt);
-    altitude_smoothed.push_back(std::accumulate(alt_buffer.begin(), alt_buffer.end(), 0.0) / alt_buffer.size());
-
-    if(Q_LIKELY(spd_buffer.size() == SMOOTHING_WINDOW_SIZE)) spd_buffer.erase(spd_buffer.cbegin());
-    spd_buffer.push_back(spd);
-    speed_smoothed.push_back(std::accumulate(spd_buffer.begin(), spd_buffer.end(), 0.0) / spd_buffer.size());
 
     // update table
     ui->table->insertRow(ui->table->rowCount());

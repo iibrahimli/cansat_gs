@@ -8,7 +8,7 @@
 #include "sat_handler.h"
 
 
-#define SMOOTHING_WINDOW_SIZE 3
+#define SMOOTHING_WINDOW_SIZE 5
 
 
 namespace Ui {
@@ -82,7 +82,6 @@ private:
     // smoothing
     std::vector<double>    alt_buffer;
     std::vector<double>    spd_buffer;
-    QVector<double>        keys;
     QVector<double>        altitude_smoothed;
     QVector<double>        speed_smoothed;
 
