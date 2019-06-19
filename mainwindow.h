@@ -8,6 +8,9 @@
 #include "sat_handler.h"
 
 
+#define SMOOTHING_WINDOW_SIZE 3
+
+
 namespace Ui {
 class MainWindow;
 }
@@ -75,6 +78,13 @@ private:
     std::vector<QPixmap>   imgs;
     int                    img_index = -1;
     bool                   autoscroll_table = true;
+
+    // smoothing
+    std::vector<double>    alt_buffer;
+    std::vector<double>    spd_buffer;
+    QVector<double>        keys;
+    QVector<double>        altitude_smoothed;
+    QVector<double>        speed_smoothed;
 
 };
 

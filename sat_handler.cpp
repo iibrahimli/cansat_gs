@@ -122,16 +122,33 @@ void sat_handler::read_data()
     // =======   TODO: add IMG packets    =======
     // ==========================================
 
+
+    if(!started){
+        // wait for at least the header
+        if(serial->bytesAvailable() < HEADER_SIZE) return;
+
+        // at this point, at least HEADER_SIZE bytes are available,
+        // but that might be part of a corrupted packet
+        // remove (if necessary) until start byte is found
+        buf.append(serial->readAll());
+
+        while(idx < buf.size() && buf[idx] != TLM_START_BYTE) ++idx;
+        if(idx == buf.size()){
+            // buf does not contain a header
+            buf.clear();
+            idx = 0;
+            return;
+        }
+        // buf contains a header starting at idx
+        size = buf[++idx];
+        header_start_idx = idx-1;
+        started = true;
+    }
+
+
     while (1) {
 
         if(!started){
-            // wait for at least the header
-            if(serial->bytesAvailable() < HEADER_SIZE) return;
-
-            // at this point, at least HEADER_SIZE bytes are available,
-            // but that might be part of a corrupted packet
-            // remove (if necessary) until start byte is found
-            buf.append(serial->readAll());
 
             while(idx < buf.size() && buf[idx] != TLM_START_BYTE) ++idx;
             if(idx == buf.size()){
@@ -146,15 +163,19 @@ void sat_handler::read_data()
             started = true;
         }
 
-        // wait for the body
-        if(serial->bytesAvailable() < size - HEADER_SIZE) return;
+//        // wait for the body
+//        if(serial->bytesAvailable() < size - HEADER_SIZE) return;
 
-        // read the body
-        buf.append(serial->read(size - HEADER_SIZE));
+//        // read the body
+//        if(size - HEADER_SIZE > 0){
+//            buf.append(serial->read(size - HEADER_SIZE));
+//        }
 
 //        qDebug() << QString(buf);
 
         // check packet integrity
+        // TODO: Add if statement
+
         if(buf[header_start_idx + size - 1] != TLM_END_BYTE){
             // corrupted packet
 
@@ -183,7 +204,7 @@ void sat_handler::read_data()
             if(check_index(packet_id, pckt_id)){
                 res.clear();
                 started  = false;
-                return;
+                continue;
             }
 
             flight_time.emplace_back(ftime);

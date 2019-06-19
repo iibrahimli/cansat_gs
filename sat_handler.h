@@ -142,7 +142,6 @@ private:
     bool parse_image(const QByteArray& pckt);
 
 
-
     /*
      *  utility function to check whether given index exists in array
      *  returns true if id exists in v
@@ -150,8 +149,9 @@ private:
     bool check_index(const std::vector<int>& v, const int id);
 
 
-    int                   img_counter   {0};  // latest image id
-    int                   chunk_counter {0};  // latest chunk id
+
+    int                   img_counter   {0};    // latest image id
+    int                   chunk_counter {0};    // latest chunk id
 
     // indexes are packet IDs
     std::vector<double>   flight_time;
@@ -162,12 +162,13 @@ private:
     std::vector<gps_cd>   gps;
 
     // holds received (hopefully) pictures
-    // in file system, photos are named 0.pgm, 1.pgm, 2.pgm etc
+    // in file system, photos are named
+    // 0.pgm, 1.pgm, 2.pgm etc
     std::vector<QPixmap>  img;
 
     QSerialPort          *serial;
-    QByteArray            buf;   // raw data read from serial port
-    QString               tlm_log_filename; // (datetime.csv) latest file being written
+    QByteArray            buf;                  // raw data read from serial port
+    QString               tlm_log_filename;     // (datetime.csv) latest file being written
 
 };
 
