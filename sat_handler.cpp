@@ -123,15 +123,15 @@ void sat_handler::read_data()
     // ==========================================
 
 
+//    // wait for at least the header
+//    if(serial->bytesAvailable() < HEADER_SIZE) return;
+
+    // at this point, at least HEADER_SIZE bytes are available,
+    // but that might be part of a corrupted packet
+    // remove (if necessary) until start byte is found
+    buf.append(serial->readAll());
+
     if(!started){
-        // wait for at least the header
-        if(serial->bytesAvailable() < HEADER_SIZE) return;
-
-        // at this point, at least HEADER_SIZE bytes are available,
-        // but that might be part of a corrupted packet
-        // remove (if necessary) until start byte is found
-        buf.append(serial->readAll());
-
         while(idx < buf.size() && buf[idx] != TLM_START_BYTE) ++idx;
         if(idx == buf.size()){
             // buf does not contain a header
@@ -140,9 +140,13 @@ void sat_handler::read_data()
             return;
         }
         // buf contains a header starting at idx
-        size = buf[++idx];
-        header_start_idx = idx-1;
-        started = true;
+        if (idx + 1 >= buf.size()) {
+            return;
+        } else {
+            size = buf[++idx];
+            header_start_idx = idx-1;
+            started = true;
+        }
     }
 
 
@@ -158,9 +162,13 @@ void sat_handler::read_data()
                 return;
             }
             // buf contains a header starting at idx
-            size = buf[++idx];
-            header_start_idx = idx-1;
-            started = true;
+            if (idx + 1 >= buf.size()) {
+                return;
+            } else {
+                size = buf[++idx];
+                header_start_idx = idx-1;
+                started = true;
+            }
         }
 
 //        // wait for the body
@@ -175,8 +183,9 @@ void sat_handler::read_data()
 
         // check packet integrity
         // TODO: Add if statement
-
-        if(buf[header_start_idx + size - 1] != TLM_END_BYTE){
+        if (buf.size() <= header_start_idx + size - 1) {
+            return;
+        } else if(buf[header_start_idx + size - 1] != TLM_END_BYTE){
             // corrupted packet
 
             buf.remove(0, header_start_idx + size);
@@ -282,7 +291,7 @@ bool sat_handler::parse_telemetry(const QByteArray&  tlm,
 {
     //  Ts,4318,112.35,112,211.25,105.19,40.15648,N,51.23284,E,0$
     //    |    |      |   |      |      |        | |        | |
-    //  -> 0 | 1  |   2  | 3 |   4  |  5   |    6   |7|   8    |9|10
+    //  ->|  0 |   1  | 2 |   3  |   4  |    5   |6|    7   |8|9
     //
     // : header = 'T' (1 byte, ASCII) + total packet size (1 byte, binary)
     // 0: team id (4 bytes, ASCII "4318")
@@ -326,19 +335,21 @@ bool sat_handler::parse_telemetry(const QByteArray&  tlm,
  */
 bool sat_handler::parse_image(const QByteArray &pckt)
 {
-    //  Ps,i,c,s,DDDD ... DDDD
-    //    | | | |
-    //  0 |1|2|3|     4
+    //  Ps,i,cc,DDDD ... DDDD
+    //    | |  |
+    //  0 |1|2 |     4
     //
     // 0: header: 'P' (1 byte, ASCII) and total packet size (1 byte, binary)
     // 1: image id (1 byte, binary)
-    // 2: chunk id (1 byte, binary)
-    // 3: size of data (4) (1 byte, binary) ????????????????????????? TODO ===
+    // 2: chunk id (2 byte, binary)
 
     // write image to file
     QFile file(img_path + QString("%1.pgm").arg(img_counter));
     if(file.open(QIODevice::WriteOnly)){
-        file.write(pckt);
+
+        // write the chunk to file
+//        file.write(pckt);
+
         file.close();
     }
     else{
@@ -357,7 +368,7 @@ bool sat_handler::parse_image(const QByteArray &pckt)
 
 
 /*
- *
+ *  checks given index, duplicates are ignored
  */
 bool sat_handler::check_index(const std::vector<int>& v, const int id)
 {

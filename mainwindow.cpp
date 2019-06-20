@@ -229,6 +229,9 @@ void MainWindow::update_timer()
 {
     ui->lcdNumber->display(ui->lcdNumber->value()+1);
 
+    /*
+     *  uncomment for fake telemetry after "initialize"
+     */
 //    emit sh->push_telemetry(ui->lcdNumber->value(),
 //                            ui->lcdNumber->value(),
 //                            ((double) qrand()/RAND_MAX) * ui->lcdNumber->value()*10 + ui->lcdNumber->value()*3.4,
@@ -391,6 +394,8 @@ void MainWindow::export_csv()
                 strl << ui->table->item(r, c)->text();
             }
             out << strl.join(",") << "\r\n";
+//            out.flush();
+            strl.clear();
         }
 
         file.close();
