@@ -59,8 +59,9 @@ MainWindow::MainWindow(QWidget *parent)
             logo_img.setPixelColor(x, y, col);
         }
     }
-    logo_pixmap.convertFromImage(logo_img);
-    ui->aerial->setPixmap(logo_pixmap);
+    QPixmap aepxm;
+    aepxm.convertFromImage(logo_img);
+    ui->aerial->setPixmap(aepxm);
     ui->aerial->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
 
     ui->photo_num->clear();
@@ -98,22 +99,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     // UI signals/slots
-    connect(ui->reset, &QPushButton::clicked, [=](){
+    connect(ui->reset,   &QPushButton::clicked, [=](){
         reset_plots();
         reset_timer();
         timer->stop();
-        ui->tlm_pckts->setText(QString("%1 (%2 Hz)").arg("0", "0.00"));
-        ui->lost_tlm_pckts->setText(QString("%1 (%2 % )").arg("0", "0.00"));
-        ui->img_pckts_freq->setText(QString("%1 Hz").arg("0.00"));
+        ui->total_pckt->setText(QString("%1").arg(0));
+        ui->lost_pckt->setText(QString("%1 (%2%)").arg("0", "0.0"));
         sh->reset_state();
 
-        // set logo as image
-        ui->aerial->setPixmap(logo_pixmap);
-        ui->photo_num->setText("0 / 0");
-        img_index = -1;
-        imgs.clear();
-
-        // reset tables
+        // save data from tables & reset tables
         ui->table->setRowCount(0);
 
     });
@@ -165,8 +159,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
         ui->speed->replot();
     });
-    /* image percentage */
-    connect(sh, &sat_handler::update_img_recv_perc, ui->img_recv, &QProgressBar::setValue);
+
 
 
 
@@ -236,23 +229,6 @@ void MainWindow::update_timer()
 {
     ui->lcdNumber->display(ui->lcdNumber->value()+1);
 
-    // update battery
-    sat_battery -= 0.1897222;
-    ui->bat_mwh->setText(QString("%1/4500 mWh (%2%)").arg(
-                             QString::number(sat_battery,                'f', 0),
-                             QString::number(sat_battery / 4500 * 100.0, 'f', 1)));
-
-    // update stats
-    ui->tlm_pckts->setText(QString("%1 (%2 Hz)").arg(sh->get_recv_tlm_count() + sh->get_lost_tlm_count())
-                               .arg(QString::number((sh->get_recv_tlm_count() + sh->get_lost_tlm_count())
-                                                    / ui->lcdNumber->value(), 'f', 2)));
-    ui->lost_tlm_pckts->setText(QString("%1 (%2 % )").arg(
-                               sh->get_lost_tlm_count()).arg(
-                               (sh->get_recv_tlm_count() + sh->get_recv_tlm_count() == 0) ?
-                               QString("0") :
-                               QString::number((double) sh->get_lost_tlm_count() /
-                               (sh->get_lost_tlm_count() + sh->get_recv_tlm_count()) * 100., 'f', 1) ));
-
     /*
      *  uncomment for fake telemetry after "initialize"
      */
@@ -271,12 +247,6 @@ void MainWindow::update_timer()
 void MainWindow::reset_timer()
 {
     ui->lcdNumber->display(0);
-
-    sat_battery = 4500;
-    ui->bat_mwh->setText(QString("%1/4500 mWh (%2%)").arg(
-                             QString::number(4500, 'f', 0),
-                             QString::number(100,  'f', 1)));
-
 }
 
 
@@ -293,11 +263,14 @@ void MainWindow::add_telemetry(double ftime,
     // add smoothed versions
     if(Q_LIKELY(alt_buffer.size() == SMOOTHING_WINDOW_SIZE)) alt_buffer.erase(alt_buffer.cbegin());
     alt_buffer.push_back(alt);
+//    double smoothed_alt = ;
+//    altitude_smoothed.push_back();
     ui->altitude->graph(1)->addData(ftime,
                                     std::accumulate(alt_buffer.begin(), alt_buffer.end(), 0.0) / alt_buffer.size());
 
     if(Q_LIKELY(spd_buffer.size() == SMOOTHING_WINDOW_SIZE)) spd_buffer.erase(spd_buffer.cbegin());
     spd_buffer.push_back(spd);
+//    speed_smoothed.push_back(std::accumulate(spd_buffer.begin(), spd_buffer.end(), 0.0) / spd_buffer.size());
     ui->speed->graph(1)->addData(ftime,
                                  std::accumulate(spd_buffer.begin(), spd_buffer.end(), 0.0) / spd_buffer.size());
 
@@ -328,10 +301,8 @@ void MainWindow::add_telemetry(double ftime,
     if(autoscroll_table) ui->table->scrollToBottom();
 
     // update stats
-    ui->tlm_pckts->setText(QString("%1 (%2 Hz)").arg(sh->get_recv_tlm_count() + sh->get_lost_tlm_count())
-                               .arg(QString::number((sh->get_recv_tlm_count() + sh->get_lost_tlm_count())
-                                                    / ui->lcdNumber->value(), 'f', 2)));
-    ui->lost_tlm_pckts->setText(QString("%1 (%2 % )").arg(
+    ui->total_pckt->setText(QString("%1").arg(sh->get_recv_tlm_count() + sh->get_lost_tlm_count()));
+    ui->lost_pckt->setText(QString("%1 (%2%)").arg(
                                sh->get_lost_tlm_count()).arg(
                                (sh->get_recv_tlm_count() + sh->get_recv_tlm_count() == 0) ?
                                QString("0") :
@@ -348,12 +319,8 @@ void MainWindow::add_img(QPixmap img)
 {
     imgs.push_back(img);
     ++img_index;
-//    ui->aerial->setPixmap(imgs[img_index].scaled(ui->aerial->width(), ui->aerial->height()));
+    ui->aerial->setPixmap(imgs[img_index].scaled(ui->aerial->width(), ui->aerial->height()));
     ui->photo_num->setText(QString("%1 / %2").arg(img_index+1).arg(imgs.size()));
-
-    // update image frequency
-    ui->img_pckts_freq->setText(QString("%1 Hz").arg(
-                                    QString::number((double) imgs.size() / ui->lcdNumber->value(), 'f', 2)));
 }
 
 
@@ -427,6 +394,7 @@ void MainWindow::export_csv()
                 strl << ui->table->item(r, c)->text();
             }
             out << strl.join(",") << "\r\n";
+//            out.flush();
             strl.clear();
         }
 

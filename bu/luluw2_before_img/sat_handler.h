@@ -16,21 +16,17 @@
 using byte = uint8_t;
 
 
-#define PGM_HEADER_SIZE      15
-#define IMG_WIDTH            480
-#define IMG_HEIGHT           480
+#define PGM_HEADER_SIZE  15
+#define IMG_WIDTH        480
+#define IMG_HEIGHT       480
 
-#define TEAM_ID              4318
-#define HEADER_SIZE          3
-#define TLM_START_BYTE       'T'
-#define TLM_END_BYTE         '$'
-#define TLM_MAX_SIZE         57
+#define TEAM_ID          4318
+#define HEADER_SIZE      3
+#define TLM_START_BYTE   'T'
+#define TLM_END_BYTE     '$'
+#define TLM_MAX_SIZE     57
 
-#define IMG_START_BYTE       'P'
-#define IMG_END_BYTE         '$'
-#define CHUNK_SIZE           240
-#define NUM_IMG_CHUNKS       240
-#define IMG_PCKT_HEADER_SIZE 5
+#define IMG_START_BYTE   'P'
 
 
 // path to saved images
@@ -81,12 +77,6 @@ public:
     int get_recv_tlm_count();
 
 
-    /*
-     *  telemetry frequency
-     */
-    double get_tlm_freq();
-
-
 signals:
 
     /*
@@ -104,12 +94,6 @@ signals:
      *  adds latest image to pixmap array in MainWindow
      */
     void push_img(QPixmap img);
-
-
-    /*
-     *  updates progress bar
-     */
-    void update_img_recv_perc(int val);
 
 
 public slots:
@@ -165,13 +149,6 @@ private:
     bool check_index(const std::vector<int>& v, const int id);
 
 
-    /*
-     *  initializes image buffer with header and zeros to a QByteArray
-     *  ! contents are lost !
-     */
-    void init_img_buf(QByteArray& buf);
-
-
 
     int                   img_counter   {0};    // latest image id
     int                   chunk_counter {0};    // latest chunk id
@@ -188,7 +165,6 @@ private:
     // in file system, photos are named
     // 0.pgm, 1.pgm, 2.pgm etc
     std::vector<QPixmap>  img;
-    QByteArray            img_buf;              // image buffer
 
     QSerialPort          *serial;
     QByteArray            buf;                  // raw data read from serial port

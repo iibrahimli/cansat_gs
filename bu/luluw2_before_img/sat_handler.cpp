@@ -1,9 +1,5 @@
 #include "sat_handler.h"
-
-
-// TODO: delete
 #include <QDebug>
-#include <QThread>
 
 
 sat_handler::sat_handler(const QString port_name, qint32 baud)
@@ -23,8 +19,6 @@ sat_handler::sat_handler(const QString port_name, qint32 baud)
     connect(serial, &QSerialPort::readyRead,     this, &sat_handler::read_data);
     connect(serial, &QSerialPort::errorOccurred, this, &sat_handler::handle_error);
 
-    // image file in memory
-    init_img_buf(img_buf);
 }
 
 
@@ -96,25 +90,12 @@ int sat_handler::get_recv_tlm_count()
 }
 
 
-// return frequency of RECEIVED packets
-double sat_handler::get_tlm_freq()
-{
-    std::vector<double> ft = flight_time;
-    std::sort(ft.begin(), ft.end());
-    return (ft.size()) / (ft[ft.size()-1] - ft[0]);
-}
-
-
 /*
  *  send data to sat
  */
 void sat_handler::send_packet(QByteArray data)
 {
-    for (int i = 0; i < data.size(); ++i) {
-        serial->write(data.mid(i, 1));
-        QThread::msleep(50);
-    }
-
+    serial->write(data);
 }
 
 
@@ -135,7 +116,6 @@ void sat_handler::read_data()
     static double     ftime, alt, spd;
     static char       imgt;
     static gps_cd     gpsc;
-    static bool       is_tlm      = true;
 
 
     // ==========================================
@@ -152,15 +132,13 @@ void sat_handler::read_data()
     buf.append(serial->readAll());
 
     if(!started){
-        while(idx < buf.size() && (buf[idx] != TLM_START_BYTE && buf[idx] != IMG_START_BYTE)) ++idx;
+        while(idx < buf.size() && buf[idx] != TLM_START_BYTE) ++idx;
         if(idx == buf.size()){
             // buf does not contain a header
             buf.clear();
             idx = 0;
             return;
         }
-        if (buf[idx] == TLM_START_BYTE) is_tlm = true;
-        else is_tlm = false;
         // buf contains a header starting at idx
         if (idx + 1 >= buf.size()) {
             return;
@@ -176,20 +154,12 @@ void sat_handler::read_data()
 
         if(!started){
 
-            while(idx < buf.size() && (buf[idx] != TLM_START_BYTE || buf[idx] != IMG_START_BYTE)) ++idx;
+            while(idx < buf.size() && buf[idx] != TLM_START_BYTE) ++idx;
             if(idx == buf.size()){
                 // buf does not contain a header
                 buf.clear();
                 idx = 0;
                 return;
-            }
-            if (buf[idx] == TLM_START_BYTE) {
-                is_tlm = true;
-                qDebug() << "Received telemetry packet";
-            }
-            else {
-                is_tlm = false;
-                qDebug() << "Received image packet";
             }
             // buf contains a header starting at idx
             if (idx + 1 >= buf.size()) {
@@ -215,10 +185,8 @@ void sat_handler::read_data()
         // TODO: Add if statement
         if (buf.size() <= header_start_idx + size - 1) {
             return;
-        } else if(buf[header_start_idx + size - 1] != TLM_END_BYTE && buf[header_start_idx + size - 1] != IMG_END_BYTE){
+        } else if(buf[header_start_idx + size - 1] != TLM_END_BYTE){
             // corrupted packet
-
-            qDebug() << "Packet is corrupted";
 
             buf.remove(0, header_start_idx + size);
             idx = 0;
@@ -236,14 +204,9 @@ void sat_handler::read_data()
         idx = 0;
         header_start_idx = 0;
 
-        if (is_tlm) {
-            std::cout << "Received telemetry packet: " << res.toStdString() << std::endl;
-        }
-        else {
-            std::cout << "Received image packet: " << std::endl;
-        }
+        std::cout << "Received telemetry packet: " << res.toStdString() << std::endl;
 
-        if(is_tlm && parse_telemetry(res, ftime, pckt_id, alt, spd, imgt, gpsc)){
+        if(parse_telemetry(res, ftime, pckt_id, alt, spd, imgt, gpsc)){
             // successfully parsed: telemetry packet complete
 
             // ignore duplicate packets
@@ -294,11 +257,6 @@ void sat_handler::read_data()
 
             emit push_telemetry(ftime, pckt_id, alt, spd, imgt, gpsc);
         }
-        else if (!is_tlm && parse_image(res)) {
-            // image parsed succesfully
-        } else {
-            // image and telemetry parsing failed
-        }
 
         res.clear();
         started  = false;
@@ -348,8 +306,6 @@ bool sat_handler::parse_telemetry(const QByteArray&  tlm,
     // 9: image taken (ASCII char 0/1)
 
 
-    qDebug() << "Telemetry packet to parse:" << tlm;
-
     // split into fields
     QList<QByteArray> spl = tlm.mid(3, tlm.size()-4).split(',');
 
@@ -379,7 +335,7 @@ bool sat_handler::parse_telemetry(const QByteArray&  tlm,
  */
 bool sat_handler::parse_image(const QByteArray &pckt)
 {
-    //  Ps i cc DDDD ... DDDD$
+    //  Ps,i,cc,DDDD ... DDDD
     //    | |  |
     //  0 |1|2 |     4
     //
@@ -387,111 +343,25 @@ bool sat_handler::parse_image(const QByteArray &pckt)
     // 1: image id (1 byte, binary)
     // 2: chunk id (2 byte, binary)
 
-    qDebug() << "Image packet to parse:" << pckt;
+    // write image to file
+    QFile file(img_path + QString("%1.pgm").arg(img_counter));
+    if(file.open(QIODevice::WriteOnly)){
 
-    static byte     current_img_idx    = 0; // Change to 0 after =========
-    static uint16_t current_chunk_idx  = 0;
+        // write the chunk to file
+//        file.write(pckt);
 
-
-    const uint8_t *data_tmp = reinterpret_cast<const uint8_t *>(pckt.data());
-
-
-    // Data from packet
-    byte            size               = pckt[1];
-    byte            img_idx            = pckt[2];
-    uint16_t        chunk_idx          = ((int16_t) (data_tmp[3]) << 8) + (data_tmp[4]);
-
-    qDebug() << "Part #" << chunk_idx << " of image #" << img_idx << " has been received";
-    qDebug() << "size:     " << size;
-    qDebug() << "img_idx:  " << img_idx;
-    qDebug() << "chunk_idx:" << chunk_idx;
-
-    if (current_chunk_idx++ != chunk_idx && chunk_idx < NUM_IMG_CHUNKS) {
-        // Part of image is lost!
-        current_chunk_idx = chunk_idx + 1;
-    } else if (chunk_idx >= NUM_IMG_CHUNKS) { // Wrong chunk id
+        file.close();
+    }
+    else{
+        std::cerr << "Couldn't open file " << file.fileName().toStdString() << std::endl;
         return false;
     }
 
-    if (current_img_idx == img_idx) {
-        // we copy each pixel to 2 pixels in image buffer (soxush)
-        int begin = PGM_HEADER_SIZE + chunk_idx * CHUNK_SIZE * 2 * 2;
-        for (int i = begin; i < begin + (size - 6) * 2 * 2; ++i) {
-            img_buf[i] = pckt[IMG_PCKT_HEADER_SIZE + ((i - begin) / 2) % (size - IMG_PCKT_HEADER_SIZE)];
-        }
+    img.emplace_back(file.fileName());
+    ++img_counter;
 
-        emit update_img_recv_perc((chunk_idx+1) * 100 / NUM_IMG_CHUNKS);
-
-        QFile file(img_path + QString("%1.pgm").arg(img_counter));
-        if(file.open(QIODevice::WriteOnly | QIODevice::Truncate)){
-            file.write(img_buf);
-            file.close();
-        }
-        else{
-            std::cerr << "Couldn't open file " << file.fileName().toStdString() << std::endl;
-            return false;
-        }
-    } // BASMIWAM ==============================================================
-    else { // Got a different image
-        // write image to file
-        QFile file(img_path + QString("%1.pgm").arg(current_img_idx));
-        if(file.open(QIODevice::WriteOnly)){
-            file.write(img_buf);
-            file.close();
-        }
-        else{
-            std::cerr << "Couldn't open file " << file.fileName().toStdString() << std::endl;
-            return false;
-        }
-
-        init_img_buf(img_buf);
-        img.emplace_back(file.fileName());
-
-        // send image to MainWindow
-        // TODO : RESET CURRENT_IMG_IDX
-        emit push_img(img[current_img_idx]);
-
-        current_img_idx = img_idx;
-
-        int begin = PGM_HEADER_SIZE + chunk_idx * CHUNK_SIZE * 2 * 2;
-        for (int i = begin; i < begin + (size - 6) * 2 * 2; ++i) {
-            img_buf[i] = pckt[IMG_PCKT_HEADER_SIZE + ((i - begin) / 2) % (size - IMG_PCKT_HEADER_SIZE)];
-        }
-
-        emit update_img_recv_perc((chunk_idx+1) * 100 / NUM_IMG_CHUNKS);
-
-        QFile new_file{img_path + QString("%1.pgm").arg(current_img_idx)};
-        if(new_file.open(QIODevice::WriteOnly | QIODevice::Truncate)){
-            new_file.write(img_buf);
-            new_file.close();
-        }
-        else{
-            std::cerr << "Couldn't open file " << new_file.fileName().toStdString() << std::endl;
-            return false;
-        }
-    }
-
-    // image is complete
-    if(size != CHUNK_SIZE + IMG_PCKT_HEADER_SIZE + 1 || chunk_idx == NUM_IMG_CHUNKS - 1){
-
-        // write image to file
-        QFile file(img_path + QString("%1.pgm").arg(current_img_idx));
-        if(file.open(QIODevice::WriteOnly)){
-            file.write(img_buf);
-            file.close();
-        }
-        else{
-            std::cerr << "Couldn't open file " << file.fileName().toStdString() << std::endl;
-            return false;
-        }
-
-        init_img_buf(img_buf);
-        img.emplace_back(file.fileName());
-
-        // send image to MainWindow
-        emit push_img(img[current_img_idx++]);
-    }
-
+    // send image to MainWindow
+    emit push_img(img[img_counter-1]);
 
     return true;
 }
@@ -506,16 +376,4 @@ bool sat_handler::check_index(const std::vector<int>& v, const int id)
     int s = v.size() - 1;
     for(; s >= 0; --s) if(Q_LIKELY(v.at(s) == id)) return true;
     return false;
-}
-
-
-/*
- *  clear out array
- */
-void sat_handler::init_img_buf(QByteArray &buf)
-{
-    static const QByteArray pgm_header {"P5\n480 480\n255\n"};
-    buf.clear();
-    buf.append(pgm_header);
-    buf.append(QByteArray(IMG_WIDTH * IMG_HEIGHT, 0));
 }

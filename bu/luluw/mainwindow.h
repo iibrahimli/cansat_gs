@@ -75,15 +75,15 @@ private:
 
     Ui::MainWindow        *ui;
     sat_handler           *sh;
-    QPixmap                logo_pixmap;   // logo to display when there are no images
     std::vector<QPixmap>   imgs;
     int                    img_index = -1;
     bool                   autoscroll_table = true;
-    double                 sat_battery = 4500;
 
     // smoothing
     std::vector<double>    alt_buffer;
     std::vector<double>    spd_buffer;
+    QVector<double>        altitude_smoothed;
+    QVector<double>        speed_smoothed;
 
 };
 
