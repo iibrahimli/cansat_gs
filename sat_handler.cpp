@@ -30,7 +30,7 @@ sat_handler::sat_handler(const QString port_name, qint32 baud)
 
 sat_handler::~sat_handler()
 {
-    delete serial;
+        delete serial;
 }
 
 
