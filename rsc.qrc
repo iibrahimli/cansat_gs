@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/">
+        <file>rsc/logo.png</file>
+        <file>rsc/refresh.png</file>
+        <file>gps_cd.cpp</file>
+        <file>gps_cd.h</file>
+        <file>main.cpp</file>
+        <file>mainwindow.cpp</file>
+        <file>mainwindow.h</file>
+        <file>qcustomplot.cpp</file>
+        <file>qcustomplot.h</file>
+        <file>sat_handler.cpp</file>
+        <file>sat_handler.h</file>
+        <file>rsc/default_baud.png</file>
+        <file>rsc/export.png</file>
+    </qresource>
+</RCC>
